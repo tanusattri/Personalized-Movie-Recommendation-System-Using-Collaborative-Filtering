@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieRec AI — Collaborative Filtering Engine</title>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* ========== ROOT VARIABLES ========== */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #263348;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        /* ========== BASE ========== */
+        * { font-family: 'Inter', sans-serif; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ========== NAVBAR ========== */
+        .navbar-custom {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 0;
+        }
+        .navbar-brand-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .navbar-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: 0.5rem;
+        }
+        .navbar-badge {
+            font-size: 0.72rem;
+            background: var(--accent);
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            position: sticky;
+            top: 80px;
+        }
+        .sidebar .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+        .sidebar .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-select, .form-control {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 10px;
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.25);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .form-select option {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .form-check-input:checked {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+        .form-range::-webkit-slider-thumb {
+            background: var(--accent);
+        }
+        .btn-recommend {
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            padding: 12px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .btn-recommend:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59,130,246,0.35);
+        }
+
+        /* ========== METRIC CARDS ========== */
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.1rem;
+            text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .metric-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+        .metric-good { color: var(--success); }
+        .metric-moderate { color: var(--warning); }
+        .metric-bad { color: var(--danger); }
+        .metric-bar {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            background: var(--border-color);
+            overflow: hidden;
+        }
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        /* ========== RECOMMENDATION CARDS ========== */
+        .rec-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.3rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .rec-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .rec-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 30px rgba(59,130,246,0.15);
+            transform: translateY(-4px);
+        }
+        .rec-card .movie-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.6rem;
+        }
+        .rec-card .stars {
+            color: #facc15;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        .rec-card .predicted-rating {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+        .badge-genre {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #fff;
+        }
+        .badge-language {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            background: transparent;
+        }
+        .badge-diversity {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            color: #fff;
+        }
+
+        /* ========== SECTION HEADERS ========== */
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        /* ========== RATE SECTION ========== */
+        .rate-section .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+        .btn-rate {
+            background: var(--success);
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .btn-rate:hover {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        /* ========== SPINNER ========== */
+        .spinner-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.7);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .spinner-overlay .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: var(--accent);
+        }
+
+        /* ========== TOAST ========== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+        }
+
+        /* ========== FOOTER ========== */
+        .footer-custom {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            padding: 1.2rem 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            margin-top: 3rem;
+        }
+
+        /* ========== ALGO RADIO BUTTONS ========== */
+        .algo-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+        .algo-option:hover {
+            background: rgba(59,130,246,0.1);
+        }
+        .algo-option .form-check-input {
+            margin-right: 8px;
+        }
+
+        /* ========== RANGE DISPLAY ========== */
+        .range-value {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ======================= LOADING SPINNER ======================= -->
+<div id="spinnerOverlay" class="spinner-overlay" style="display:none;">
+    <div class="text-center">
+        <div class="spinner-border" role="status"></div>
+        <div class="mt-3 text-light fw-semibold">Loading recommendations…</div>
+    </div>
+</div>
+
+<!-- ======================= TOAST CONTAINER ======================= -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ======================= NAVBAR ======================= -->
+<nav class="navbar navbar-custom sticky-top">
+    <div class="container-fluid px-4">
+        <div class="d-flex align-items-center">
+            <span class="navbar-brand-text">🎬 MovieRec AI</span>
+            <span class="navbar-subtitle d-none d-sm-inline">Collaborative Filtering Engine</span>
+        </div>
+        <span class="navbar-badge d-none d-md-inline">HCLTech Career Shaper 2025-26</span>
+    </div>
+</nav>
+
+<!-- ======================= MAIN CONTENT ======================= -->
+<div class="container-fluid px-4 mt-4">
+    <div class="row g-4">
+
+        <!-- ============== LEFT SIDEBAR ============== -->
+        <div class="col-md-3">
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header py-3">⚙️ Configuration</div>
+                    <div class="card-body">
+
+                        <!-- User Selector -->
+                        <div class="mb-3">
+                            <label for="userSelect" class="form-label">User</label>
+                            <select id="userSelect" class="form-select form-select-sm">
+                                {% for user in users %}
+                                <option value="{{ user }}" {% if user == default_user %}selected{% endif %}>
+                                    User {{ user }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Algorithm Selector -->
+                        <div class="mb-3">
+                            <label class="form-label">Algorithm</label>
+                            <div>
+                                <label class="algo-option">
+                                    <input class="form-check-input" type="radio" name="algo" value="svd" checked>
+                                    <span>SVD</span>
+                                </label>
+                                <label class="algo-option">
+                                    <input class="form-check-input" type="radio" name="algo" value="user">
+                                    <span>User-Based CF</span>
+                                </label>
+                                <label class="algo-option">
+                                    <input class="form-check-input" type="radio" name="algo" value="item">
+                                    <span>Item-Based CF</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- K Slider -->
+                        <div class="mb-3">
+                            <label class="form-label d-flex justify-content-between align-items-center">
+                                Recommendations (K)
+                                <span class="range-value" id="kValue">5</span>
+                            </label>
+                            <input type="range" class="form-range" id="kSlider" min="3" max="10" value="5"
+                                   oninput="document.getElementById('kValue').textContent = this.value">
+                        </div>
+
+                        <!-- Diversity Toggle -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="diversityToggle" checked>
+                                <label class="form-check-label" for="diversityToggle" style="font-size:0.85rem; color:var(--text-secondary);">
+                                    Diversity Re-ranking
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Get Recommendations Button -->
+                        <button id="btnRecommend" class="btn btn-recommend w-100 text-white" onclick="fetchRecommendations()">
+                            🚀 Get Recommendations
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============== MAIN PANEL ============== -->
+        <div class="col-md-9">
+
+            <!-- ====== METRICS DASHBOARD ====== -->
+            <div class="section-title">📊 Model Performance</div>
+            <div class="row g-3 mb-4" id="metricsRow">
+                <div class="col-6 col-lg-3">
+                    <div class="metric-card">
+                        <div class="metric-label">RMSE ↓</div>
+                        <div class="metric-value" id="metricRMSE">—</div>
+                        <div class="metric-bar"><div class="metric-bar-fill" id="barRMSE"></div></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="metric-card">
+                        <div class="metric-label">MAE ↓</div>
+                        <div class="metric-value" id="metricMAE">—</div>
+                        <div class="metric-bar"><div class="metric-bar-fill" id="barMAE"></div></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Precision@5 ↑</div>
+                        <div class="metric-value" id="metricPrecision">—</div>
+                        <div class="metric-bar"><div class="metric-bar-fill" id="barPrecision"></div></div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="metric-card">
+                        <div class="metric-label">Catalog Coverage ↑</div>
+                        <div class="metric-value" id="metricCoverage">—</div>
+                        <div class="metric-bar"><div class="metric-bar-fill" id="barCoverage"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== RECOMMENDATIONS ====== -->
+            <div class="section-title">🎯 Recommendations</div>
+            <div class="row g-3 mb-4" id="recsGrid">
+                <div class="col-12 empty-state" id="emptyState">
+                    <div class="icon">🎬</div>
+                    <div class="fw-semibold mb-1">Select a user and click "Get Recommendations"</div>
+                    <div class="small">Powered by SVD, User-CF, and Item-CF algorithms</div>
+                </div>
+            </div>
+
+            <!-- ====== RATE A MOVIE ====== -->
+            <div class="section-title">⭐ Rate a Movie</div>
+            <div class="rate-section">
+                <div class="card">
+                    <div class="card-body">
+                        <form id="rateForm" onsubmit="submitRating(event)">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-2">
+                                    <label for="rateUserId" class="form-label">User ID</label>
+                                    <input type="number" class="form-control form-control-sm" id="rateUserId"
+                                           placeholder="e.g. 1" required min="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="rateMovie" class="form-label">Movie</label>
+                                    <select id="rateMovie" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Select a movie…</option>
+                                        {% for movie in movies %}
+                                        <option value="{{ movie }}">{{ movie }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label d-flex justify-content-between">
+                                        Rating
+                                        <span class="text-warning fw-bold" id="ratingDisplay">3.0</span>
+                                    </label>
+                                    <input type="range" class="form-range" id="rateSlider" min="1" max="5" step="0.5" value="3"
+                                           oninput="document.getElementById('ratingDisplay').textContent = parseFloat(this.value).toFixed(1)">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-rate w-100">Submit Rating</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /col-md-9 -->
+    </div><!-- /row -->
+</div><!-- /container -->
+
+<!-- ======================= FOOTER ======================= -->
+<footer class="footer-custom">
+    HCLTech Career Shaper Programme &nbsp;|&nbsp; Project #28 &nbsp;|&nbsp; Academic Year 2025-26
+</footer>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ================================================================
+   CONSTANTS & GENRE COLORS
+   ================================================================ */
+const GENRE_COLORS = {
+    "Action":    "#ef4444",
+    "Drama":     "#8b5cf6",
+    "Comedy":    "#f59e0b",
+    "Thriller":  "#64748b",
+    "Romance":   "#ec4899",
+    "Sci-Fi":    "#06b6d4",
+    "Crime":     "#f97316",
+    "Animation": "#22c55e"
+};
+
+/* ================================================================
+   UTILITY FUNCTIONS
+   ================================================================ */
+
+/** Show / hide the global loading spinner */
+function showSpinner(show) {
+    document.getElementById("spinnerOverlay").style.display = show ? "flex" : "none";
+}
+
+/** Create and show a Bootstrap toast notification */
+function showToast(message, type) {
+    const container = document.getElementById("toastContainer");
+    const bgClass = type === "success" ? "bg-success" : type === "error" ? "bg-danger" : "bg-info";
+    const id = "toast_" + Date.now();
+    const html = `
+        <div id="${id}" class="toast align-items-center text-white ${bgClass} border-0 mb-2" role="alert"
+             data-bs-autohide="true" data-bs-delay="4000">
+            <div class="d-flex">
+                <div class="toast-body fw-semibold">${escapeHtml(message)}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+    container.insertAdjacentHTML("beforeend", html);
+    const toastEl = document.getElementById(id);
+    const bsToast = new bootstrap.Toast(toastEl);
+    bsToast.show();
+    toastEl.addEventListener("hidden.bs.toast", function () { toastEl.remove(); });
+}
+
+/** Basic HTML escaping */
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/** Render star characters for a rating value (0-5) */
+function renderStars(rating) {
+    let stars = "";
+    const fullStars = Math.floor(rating);
+    const hasHalf = (rating - fullStars) >= 0.25 && (rating - fullStars) < 0.75;
+    const roundUp = (rating - fullStars) >= 0.75;
+    const totalFull = roundUp ? fullStars + 1 : fullStars;
+    for (let i = 0; i < totalFull && i < 5; i++) {
+        stars += "★";
+    }
+    if (hasHalf && totalFull < 5) {
+        stars += "½";
+    }
+    const remaining = 5 - totalFull - (hasHalf ? 1 : 0);
+    for (let i = 0; i < remaining && i >= 0; i++) {
+        stars += "☆";
+    }
+    return stars;
+}
+
+/** Get genre badge color, falling back to a default */
+function genreColor(genre) {
+    if (!genre) return "#64748b";
+    for (const key of Object.keys(GENRE_COLORS)) {
+        if (genre.toLowerCase().includes(key.toLowerCase())) {
+            return GENRE_COLORS[key];
+        }
+    }
+    return "#64748b";
+}
+
+/** Apply color class based on metric value and direction */
+function metricColorClass(value, lower_is_better) {
+    if (value === null || value === undefined) return "metric-moderate";
+    if (lower_is_better) {
+        return value <= 0.8 ? "metric-good" : value <= 1.2 ? "metric-moderate" : "metric-bad";
+    } else {
+        return value >= 0.5 ? "metric-good" : value >= 0.2 ? "metric-moderate" : "metric-bad";
+    }
+}
+
+/** Apply color to a metric bar fill */
+function metricBarColor(value, lower_is_better) {
+    if (lower_is_better) {
+        return value <= 0.8 ? "#22c55e" : value <= 1.2 ? "#f59e0b" : "#ef4444";
+    } else {
+        return value >= 0.5 ? "#22c55e" : value >= 0.2 ? "#f59e0b" : "#ef4444";
+    }
+}
+
+/* ================================================================
+   FETCH METRICS ON PAGE LOAD
+   ================================================================ */
+document.addEventListener("DOMContentLoaded", function () {
+    fetchMetrics();
+    loadDefaultRecommendations();
+});
+
+/** Fetch evaluation metrics from /api/metrics */
+function fetchMetrics() {
+    fetch("/api/metrics")
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            updateMetricsDashboard(data);
+        })
+        .catch(function (err) {
+            console.error("Metrics fetch error:", err);
+        });
+}
+
+/** Update the 4 metric cards with data from the selected algorithm */
+function updateMetricsDashboard(data) {
+    /* Use the currently-selected algorithm's metrics */
+    const algoInput = document.querySelector('input[name="algo"]:checked');
+    const algoKey = algoInput ? algoInput.value : "svd";
+
+    /* Map radio value to possible keys in the metrics response */
+    const keyMap = { "svd": "svd", "user": "user_cf", "item": "item_cf" };
+    const metrics = data[keyMap[algoKey]] || data["svd"] || {};
+
+    /* Store full metrics globally for algo switching */
+    window.__allMetrics = data;
+
+    /* RMSE */
+    const rmse = metrics.rmse;
+    const elRMSE = document.getElementById("metricRMSE");
+    elRMSE.textContent = rmse != null ? rmse.toFixed(4) : "—";
+    elRMSE.className = "metric-value " + metricColorClass(rmse, true);
+    const barRMSE = document.getElementById("barRMSE");
+    barRMSE.style.width = rmse != null ? Math.max(5, Math.min(100, (1 - rmse / 2) * 100)) + "%" : "0%";
+    barRMSE.style.background = rmse != null ? metricBarColor(rmse, true) : "#334155";
+
+    /* MAE */
+    const mae = metrics.mae;
+    const elMAE = document.getElementById("metricMAE");
+    elMAE.textContent = mae != null ? mae.toFixed(4) : "—";
+    elMAE.className = "metric-value " + metricColorClass(mae, true);
+    const barMAE = document.getElementById("barMAE");
+    barMAE.style.width = mae != null ? Math.max(5, Math.min(100, (1 - mae / 2) * 100)) + "%" : "0%";
+    barMAE.style.background = mae != null ? metricBarColor(mae, true) : "#334155";
+
+    /* Precision@5 */
+    const prec = metrics.precision_at_5;
+    const elPrec = document.getElementById("metricPrecision");
+    elPrec.textContent = prec != null ? (prec * 100).toFixed(1) + "%" : "—";
+    elPrec.className = "metric-value " + metricColorClass(prec, false);
+    const barPrec = document.getElementById("barPrecision");
+    barPrec.style.width = prec != null ? Math.max(5, prec * 100) + "%" : "0%";
+    barPrec.style.background = prec != null ? metricBarColor(prec, false) : "#334155";
+
+    /* Coverage */
+    const cov = metrics.coverage;
+    const elCov = document.getElementById("metricCoverage");
+    elCov.textContent = cov != null ? (cov * 100).toFixed(1) + "%" : "—";
+    elCov.className = "metric-value " + metricColorClass(cov, false);
+    const barCov = document.getElementById("barCoverage");
+    barCov.style.width = cov != null ? Math.max(5, cov * 100) + "%" : "0%";
+    barCov.style.background = cov != null ? metricBarColor(cov, false) : "#334155";
+}
+
+/* Re-render metrics when algo radio changes */
+document.querySelectorAll('input[name="algo"]').forEach(function (radio) {
+    radio.addEventListener("change", function () {
+        if (window.__allMetrics) updateMetricsDashboard(window.__allMetrics);
+    });
+});
+
+/* ================================================================
+   DEFAULT RECOMMENDATIONS (from server-side Jinja context)
+   ================================================================ */
+function loadDefaultRecommendations() {
+    /* Attempt to use server-rendered defaults */
+    const defaultRecs = {{ default_recs | tojson }};
+    if (defaultRecs && defaultRecs.length > 0) {
+        renderRecommendations(defaultRecs);
+    }
+}
+
+/* ================================================================
+   FETCH RECOMMENDATIONS
+   ================================================================ */
+function fetchRecommendations() {
+    const userId = document.getElementById("userSelect").value;
+    const algo = document.querySelector('input[name="algo"]:checked').value;
+    const k = document.getElementById("kSlider").value;
+    const diversity = document.getElementById("diversityToggle").checked;
+
+    showSpinner(true);
+
+    const url = `/api/recommend?user_id=${encodeURIComponent(userId)}&algo=${encodeURIComponent(algo)}&k=${encodeURIComponent(k)}&diversity=${diversity}`;
+
+    fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            showSpinner(false);
+            if (data.error) {
+                showToast(data.error, "error");
+                return;
+            }
+            renderRecommendations(data.recommendations || []);
+            /* Re-fetch metrics for the currently-selected algo */
+            if (window.__allMetrics) {
+                updateMetricsDashboard(window.__allMetrics);
+            }
+        })
+        .catch(function (err) {
+            showSpinner(false);
+            showToast("Network error: " + err.message, "error");
+        });
+}
+
+/* ================================================================
+   RENDER RECOMMENDATION CARDS
+   ================================================================ */
+function renderRecommendations(recs) {
+    const grid = document.getElementById("recsGrid");
+    grid.innerHTML = "";
+
+    if (!recs || recs.length === 0) {
+        grid.innerHTML = `
+            <div class="col-12 empty-state">
+                <div class="icon">🤷</div>
+                <div class="fw-semibold mb-1">No recommendations found</div>
+                <div class="small">Try a different user or algorithm</div>
+            </div>`;
+        return;
+    }
+
+    recs.forEach(function (rec, idx) {
+        const title = rec.movie_title || rec.title || "Unknown";
+        const genre = rec.genre || "Unknown";
+        const language = rec.language || "—";
+        const rating = parseFloat(rec.predicted_rating || 0);
+        const diversityApplied = rec.diversity_applied || false;
+
+        const gColor = genreColor(genre);
+        const stars = renderStars(rating);
+
+        const col = document.createElement("div");
+        col.className = "col-sm-6 col-lg-4";
+
+        col.innerHTML = `
+            <div class="rec-card" style="transition-delay: ${idx * 80}ms">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="movie-title">${escapeHtml(title)}</div>
+                    <div class="predicted-rating">${rating.toFixed(1)}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge-genre" style="background:${gColor}">${escapeHtml(genre)}</span>
+                    <span class="badge-language">${escapeHtml(language)}</span>
+                    ${diversityApplied ? '<span class="badge-diversity">✨ Diversity Boosted</span>' : ''}
+                </div>
+                <div class="stars">${stars}</div>
+            </div>`;
+
+        grid.appendChild(col);
+
+        /* Trigger fade-in animation */
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                col.querySelector(".rec-card").classList.add("visible");
+            });
+        });
+    });
+}
+
+/* ================================================================
+   SUBMIT RATING
+   ================================================================ */
+function submitRating(event) {
+    event.preventDefault();
+
+    const userId = document.getElementById("rateUserId").value;
+    const movieTitle = document.getElementById("rateMovie").value;
+    const rating = parseFloat(document.getElementById("rateSlider").value);
+
+    if (!userId || !movieTitle) {
+        showToast("Please fill in all fields.", "error");
+        return;
+    }
+
+    fetch("/api/rate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            user_id: parseInt(userId, 10),
+            movie_title: movieTitle,
+            rating: rating
+        })
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+        if (data.error) {
+            showToast(data.error, "error");
+        } else {
+            showToast(data.message || "Rating submitted successfully!", "success");
+            /* Reset form */
+            document.getElementById("rateForm").reset();
+            document.getElementById("ratingDisplay").textContent = "3.0";
+        }
+    })
+    .catch(function (err) {
+        showToast("Network error: " + err.message, "error");
+    });
+}
+</script>
+
+</body>
+</html>
