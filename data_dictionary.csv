@@ -1,0 +1,9 @@
+column_name,data_type,description,example_value,nullable
+user_id,string,Unique user identifier in U-prefixed zero-padded format (U0001 to U0200).,U0042,No
+movie_title,string,"Title of the movie being rated, drawn from a curated pool of 80+ Indian and international films.",Dangal,No
+genre,string,"Genre category of the movie. One of: Action, Drama, Comedy, Thriller, Romance, Sci-Fi, Crime, Animation.",Thriller,No
+language,string,"Language of the movie version rated. One of: Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi, English, Korean, Japanese.",Hindi,No
+release_year,integer,"Year the movie was released, ranging from 1955 to 2023.",2018,No
+rating,float,User rating on a 1.0 to 5.0 scale in 0.5 increments. Follows a bell-curve distribution centred around 3.5; anomaly rows have forced extreme values (1.0 or 5.0).,3.5,No
+timestamp,string (datetime),"Date and time when the rating was submitted, in YYYY-MM-DD HH:MM:SS format, between 2023-01-01 and 2025-12-31.",2024-06-15 14:23:07,No
+is_anomaly,integer (binary),"Binary flag indicating whether the rating is an anomaly (simulated bot/noise). 1 = anomaly, 0 = normal. Approximately 2-5 % of rows are anomalies.",0,No
