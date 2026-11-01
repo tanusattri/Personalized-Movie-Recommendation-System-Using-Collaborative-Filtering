@@ -31,9 +31,6 @@ This project delivers a multi-algorithmic collaborative filtering platform combi
 
 This project incorporates formal ethical governance adhering to the statutory requirements of the **HCLTech Career Shaper Programme** and the **Government of India DPDP Act, 2023**.
 
-The official printable document is committed in this repository:  
-📄 **[`Ethical_Compliance_Declaration.docx`](./Ethical_Compliance_Declaration.docx)** *(and embedded within [`Project_Report.docx`](./Project_Report.docx))*.
-
 ### Key Ethical Confirmations:
 - **Zero Personally Identifiable Information (PII):** In compliance with the **DPDP Act 2023** data minimization principles, no user names, emails, IP addresses, or demographic identifiers are stored. Users are represented solely by synthetic alphanumeric tokens (`U0001`–`U0200`).
 - **Filter Bubble & Echo Chamber Dissolution:** Unconstrained recommendation engines reinforce cognitive biases. Our active diversity re-ranking mechanism penalizes consecutive genre repetitions, ensuring multi-genre and cross-cultural discovery.
