@@ -1,5 +1,5 @@
 # Personalized Movie Recommendation System Using Collaborative Filtering
-### HCLTech Career Shaper Programme | IV Year Industry Project #28 (Academic Year 2025–26)
+### HCLTech Career Shaper Programme | IV Year Industry Project #28 
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Flask 3.1](https://img.shields.io/badge/Flask-3.1.3-green.svg)](https://flask.palletsprojects.com/)
@@ -12,7 +12,7 @@
 
 ## 📌 Executive Summary & Project Overview
 
-This repository hosts the complete, production-ready **Personalized Movie Recommendation System** developed under the **HCLTech Career Shaper Programme (Track #28: Digital-Data-AI / AIML)** for the Academic Year 2025–26.
+This repository hosts the complete, production-ready **Personalized Movie Recommendation System** developed under the **HCLTech Career Shaper Programme (Track #28: Digital-Data-AI / AIML)** 
 
 Modern digital streaming architectures often suffer from the **"Filter Bubble" dilemma**: standard machine learning recommenders over-index on historical popularity and repetitive mainstream genres, trapping users in echo chambers while marginalizing rich regional cinema.
 
